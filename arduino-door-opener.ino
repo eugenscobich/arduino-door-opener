@@ -16,8 +16,6 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 
 unsigned long previousMillis = 0;
-const long interval = 100;
-unsigned long counter = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -32,7 +30,7 @@ void setup() {
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
-    DEBUG_PRINT_LN(F("SSD1306 allocation failed"));
+    DEBUG_PRINT_LN("SSD1306 allocation failed");
     for (;;); // Don't proceed, loop forever
   }
 
@@ -48,28 +46,13 @@ void loop() {
   currentMillis = millis();
 
   handleStopsSignals();
-  handleLookUnlockCommands();
   
   checkRequestCommand();
   handleRequestCommandChanges();
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
+  handleLookUnlockCommands();
   handleDoorCommands();
+  
   updateDisplay();
 
   previousMillis = currentMillis;
@@ -81,31 +64,32 @@ void loop() {
 void handleRequestCommandChanges() {
   if (previousRequestCommand != currentRequestCommand) {
 
-    DEBUG_PRINT("Identified a new request command: ");
-    Serial.println(getRequestCommandName(currentRequestCommand));
+    char msg[21] = "New command: ";
+    strcat(msg, getRequestCommandName(currentRequestCommand));
+    DEBUG_PRINT_LN(msg);
 
     if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN) {
       if (canOpenLeftDoor()) {
         unlockLeftDoorStartMillis = currentMillis; // Start unlock process for left door
-        openLeftDoorStartMillis = currentMillis + TIME_TO_LOCK_UNLOCK_DOORS; // Start open left door proccess
+        openLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open left door proccess
       }
       if (canOpenRightDoor()) {
         unlockRightDoorStartMillis = currentMillis; // Start unlock process for right door
-        openRightDoorStartMillis = currentMillis + TIME_TO_LOCK_UNLOCK_DOORS + TIME_TO_WAIT_DOOR_EACH_OTHER; // Start open right door proccess
+        openRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_UNLOCKING_DOORS + TIME_TO_WAIT_DOOR_EACH_OTHER; // Start open right door proccess
       }
     } else if (currentRequestCommand == REQUEST_COMMAND_TO_CLOSE) {
       if (canCloseLeftDoor()) {
         unlockLeftDoorStartMillis = currentMillis; // Start unlock process for left door
-        closeLeftDoorStartMillis = currentMillis + TIME_TO_LOCK_UNLOCK_DOORS + TIME_TO_WAIT_DOOR_EACH_OTHER; // Start open left door proccess
+        closeLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_UNLOCKING_DOORS + TIME_TO_WAIT_DOOR_EACH_OTHER; // Start open left door proccess
       }
       if (canCloseRightDoor()) {
         unlockRightDoorStartMillis = currentMillis; // Start unlock process for right door
-        closeRightDoorStartMillis = currentMillis + TIME_TO_LOCK_UNLOCK_DOORS; // Start open right door proccess
+        closeRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open right door proccess
       }
     } else if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN_LEFT_DOOR) {
       if (canOpenLeftDoor()) {
         unlockLeftDoorStartMillis = currentMillis; // Start unlock process for left door
-        openLeftDoorStartMillis = currentMillis + TIME_TO_LOCK_UNLOCK_DOORS; // Start open left door proccess
+        openLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open left door proccess
       }
     }
   }
@@ -147,26 +131,26 @@ void setupPins() {
 
 }
 
-
 void checkRequestCommand() {
 
   unsigned long receivedValue = 0;
 
   if (mySwitch.available()) {
     receivedValue = mySwitch.getReceivedValue();
-    DEBUG_PRINT("Received Value: ");
-    Serial.println(receivedValue);
+    DEBUG_PRINT_LN("Received Value: ");
+    DEBUG_PRINT_NUMBER_LN(receivedValue);
+    
     if (receivedValue == KEY_1_CODE || receivedValue == KEY_2_CODE || receivedValue == KEY_3_CODE) {
-      DEBUG_PRINT_LN("Received Close Command");
+      //DEBUG_PRINT_LN("Received Close Command");
       currentRequestCommand = REQUEST_COMMAND_TO_CLOSE;
     }
 
     if (receivedValue == KEY_1_CODE + 1 || receivedValue == KEY_2_CODE + 1 || receivedValue == KEY_3_CODE + 1) {
-      DEBUG_PRINT_LN("Received Open Command");
+      //DEBUG_PRINT_LN("Received Open Command");
       currentRequestCommand = REQUEST_COMMAND_TO_OPEN;
     }
     if (receivedValue == KEY_1_CODE + 3 || receivedValue == KEY_2_CODE + 3 || receivedValue == KEY_3_CODE + 3) {
-      DEBUG_PRINT_LN("Received Open Left Door Command");
+      //DEBUG_PRINT_LN("Received Open Left Door Command");
       currentRequestCommand = REQUEST_COMMAND_TO_OPEN_LEFT_DOOR;
     }
 
@@ -176,14 +160,18 @@ void checkRequestCommand() {
 }
 
 void updateDisplay() {
-  counter = counter + 1;
   display.clearDisplay();
   display.setTextSize(1);      // Normal 1:1 pixel scale
   display.setTextColor(SSD1306_WHITE); // Draw white text
   display.setCursor(0, 0);     // Start at top-left corner
-  //display.cp437(true);         // Use full 256 char 'Code Page 437' font
-  display.println(counter);
-  display.print("Request State: ");  display.println(getRequestCommandName(currentRequestCommand));
-
+  display.cp437(true);         // Use full 256 char 'Code Page 437' font
+  display.println(displayLine1);
+  display.println(displayLine2);
+  display.println(displayLine3);
+  display.println(displayLine4);
+  display.println(displayLine5);
+  display.println(displayLine6);
+  display.println(displayLine7);
+  display.println(displayLine8);
   display.display();
 }
