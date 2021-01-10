@@ -5,21 +5,25 @@
 #define INTERIOR_LIGHT_RELAY_PIN PA7
 #define OPEN_CLOSE_BUTTON_PIN PB3
 
+
 #define LEFT_DOOR_OPEN_PIN PB11     // Normal Open
 #define LEFT_DOOR_CLOSE_PIN PB10    // Normal Conected
 #define RIGHT_DOOR_OPEN_PIN PA11    // Normal Open
 #define RIGHT_DOOR_CLOSE_PIN PA12   // Normal Conected
 
-#define MOTOR_ACTUATOR_RELAY_PIN PA5
+
 #define RELAY_12_36_PIN PA6
+#define MOTOR_ACTUATOR_RELAY_PIN PA5
 
-#define OPEN_LEFT_MOTOR_ACTUATOR_RELAY_PIN PA4
-#define CLOSE_LEFT_MOTOR_ACTUATOR_RELAY_PIN PA3
-#define OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN PA2
-#define CLOSE_RIGHT_MOTOR_ACTUATOR_RELAY_PIN PA1
+#define OBSTACLE_LAMP_PIN PA4
+#define SIGNAL_LAMP_PIN PA3
 
-#define SIGNAL_LAMP_PIN PA0
-#define OBSTACLE_LAMP_PIN PC15
+#define OPEN_LEFT_MOTOR_ACTUATOR_RELAY_PIN PC15
+#define CLOSE_LEFT_MOTOR_ACTUATOR_RELAY_PIN PA0
+#define OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN PA1
+#define CLOSE_RIGHT_MOTOR_ACTUATOR_RELAY_PIN PA2
+
+
 #define BUZZER_PIN PC14
 
 // Request Command
@@ -281,6 +285,26 @@ void handleDoorCommands() {
   }
 }
 
+// Variables to handle signal lamp
+unsigned long signalLampStartMillis = 0;
+unsigned long signalLamp1StartMillis = 0;
+void handleSignalLamp() {
+  if (signalLampStartMillis != 0 && currentMillis >= signalLampStartMillis + TIME_TO_TOGGLE_SIGNAL_LAMP) {
+    digitalWrite(SIGNAL_LAMP_PIN, HIGH);
+    digitalWrite(BUZZER_PIN, HIGH);
+    signalLampStartMillis = 0;
+    signalLamp1StartMillis = currentMillis;
+    //DEBUG_PRINT_LN("Signal Lamp: ON");
+  } else if (signalLamp1StartMillis != 0 && currentMillis >= signalLamp1StartMillis + TIME_TO_TOGGLE_SIGNAL_LAMP) {
+    digitalWrite(SIGNAL_LAMP_PIN, LOW);
+    digitalWrite(BUZZER_PIN, LOW);
+    signalLamp1StartMillis = 0;
+    signalLampStartMillis = currentMillis;
+    //DEBUG_PRINT_LN("Signal Lamp: OFF");
+  }
+}
+
+
 // Variables to handle stop signals
 unsigned long stopOpenLeftDoorStartMillis = 0;
 unsigned long stopCloseLeftDoorStartMillis = 0;
@@ -297,6 +321,12 @@ void handleStopsSignals() {
     stopOpenLeftDoorStartMillis = 0;
     currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
     opositeRequestCommand = REQUEST_COMMAND_TO_CLOSE;
+    if (digitalRead(LEFT_DOOR_OPEN_PIN) == LOW && digitalRead(RIGHT_DOOR_OPEN_PIN) == LOW) {
+      digitalWrite(SIGNAL_LAMP_PIN, LOW);
+      digitalWrite(BUZZER_PIN, LOW);
+      signalLampStartMillis = 0;
+      signalLamp1StartMillis = 0;
+    }
     DEBUG_PRINT_LN("L Door is Opened");
   }
 
@@ -325,6 +355,12 @@ void handleStopsSignals() {
     stopOpenRightDoorStartMillis = 0;
     currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
     opositeRequestCommand = REQUEST_COMMAND_TO_CLOSE;
+    if (digitalRead(LEFT_DOOR_OPEN_PIN) == LOW && digitalRead(RIGHT_DOOR_OPEN_PIN) == LOW) {
+      digitalWrite(SIGNAL_LAMP_PIN, LOW);
+      digitalWrite(BUZZER_PIN, LOW);
+      signalLampStartMillis = 0;
+      signalLamp1StartMillis = 0;
+    }
     DEBUG_PRINT_LN("R Door is Opened");
   }
 
@@ -359,6 +395,9 @@ void handleStopDoors() {
     digitalWrite(OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, LOW);
     digitalWrite(CLOSE_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, LOW);
     digitalWrite(MOTOR_ACTUATOR_RELAY_PIN, LOW);
+    //digitalWrite(INTERIOR_LIGHT_RELAY_PIN, LOW);
+    digitalWrite(SIGNAL_LAMP_PIN, LOW);
+    digitalWrite(BUZZER_PIN, LOW);
     stopDoors1StartMillis = 0;
     DEBUG_PRINT_LN("Stop Doors: Finished");
   } 
@@ -374,12 +413,13 @@ void handleInteriorLight() {
     interiorLightStartMillis = 0;
     interiorLight1StartMillis = currentMillis;
     DEBUG_PRINT_LN("Interior Lamp: ON");
-  } else if (interiorLight1StartMillis != 0 && currentMillis >= interiorLight1StartMillis + TIME_TO_WAIT_INTERIOR_LAMP) {
+  } else if (interiorLight1StartMillis != 0 && currentMillis >= interiorLight1StartMillis + TIME_TO_SWITCH_ON_INTERIOR_LAMP) {
     digitalWrite(INTERIOR_LIGHT_RELAY_PIN, LOW);
     interiorLight1StartMillis = 0;
     DEBUG_PRINT_LN("Interior Lamp: OFF");
   }
 }
+
 
 void resetVariables() {
   unlockLeftDoorStartMillis = 0;
@@ -412,7 +452,10 @@ void resetVariables() {
   stopDoorsStartMillis = 0;
   stopDoors1StartMillis = 0;
 
-  interiorLightStartMillis = 0;
-  interiorLight1StartMillis = 0;
+//  interiorLightStartMillis = 0;
+//  interiorLight1StartMillis = 0;
+
+  signalLampStartMillis = 0;
+  signalLamp1StartMillis = 0;
   
 }

@@ -49,6 +49,7 @@ void loop() {
 
 
   handleInteriorLight();
+  handleSignalLamp();
   handleStopDoors();
   handleLookUnlockCommands();
   handleDoorCommands();
@@ -72,6 +73,7 @@ void handleRequestCommandChanges() {
       resetVariables();
       stopDoorsStartMillis = currentMillis; // Start stop doors
       interiorLightStartMillis = currentMillis; // Switch on the interior lamp
+      signalLampStartMillis = currentMillis; // Start toggling signal lamp
       if (canOpenLeftDoor()) {
         unlockLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for left door
         openLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open left door proccess
@@ -84,6 +86,7 @@ void handleRequestCommandChanges() {
       resetVariables();
       stopDoorsStartMillis = currentMillis; // Start stop doors
       interiorLightStartMillis = currentMillis; // Switch on the interior lamp
+      signalLampStartMillis = currentMillis; // Start toggling signal lamp
       if (canCloseLeftDoor()) {
         unlockLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for left door
         closeLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS + TIME_TO_WAIT_DOOR_EACH_OTHER; // Start open left door proccess
@@ -96,6 +99,7 @@ void handleRequestCommandChanges() {
       resetVariables();
       stopDoorsStartMillis = currentMillis; // Start stop doors
       interiorLightStartMillis = currentMillis; // Switch on the interior lamp
+      signalLampStartMillis = currentMillis; // Start toggling signal lamp
       if (canOpenLeftDoor()) {
         unlockLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for left door
         openLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open left door proccess
