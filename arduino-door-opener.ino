@@ -50,6 +50,7 @@ void loop() {
   checkRequestCommand();
   handleRequestCommandChanges();
 
+  handleStopDoors();
   handleLookUnlockCommands();
   handleDoorCommands();
   
@@ -69,28 +70,37 @@ void handleRequestCommandChanges() {
     DEBUG_PRINT_LN(msg);
 
     if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN) {
+      stopDoorsStartMillis = currentMillis; // Start stop doors
+      resetVariables();
       if (canOpenLeftDoor()) {
-        unlockLeftDoorStartMillis = currentMillis; // Start unlock process for left door
-        openLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open left door proccess
+        unlockLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for left door
+        openLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open left door proccess
       }
       if (canOpenRightDoor()) {
-        unlockRightDoorStartMillis = currentMillis; // Start unlock process for right door
-        openRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_UNLOCKING_DOORS + TIME_TO_WAIT_DOOR_EACH_OTHER; // Start open right door proccess
+        unlockRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for right door
+        openRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS + TIME_TO_WAIT_DOOR_EACH_OTHER; // Start open right door proccess
       }
+      currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
     } else if (currentRequestCommand == REQUEST_COMMAND_TO_CLOSE) {
+      stopDoorsStartMillis = currentMillis; // Start stop doors
+      resetVariables();
       if (canCloseLeftDoor()) {
-        unlockLeftDoorStartMillis = currentMillis; // Start unlock process for left door
-        closeLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_UNLOCKING_DOORS + TIME_TO_WAIT_DOOR_EACH_OTHER; // Start open left door proccess
+        unlockLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for left door
+        closeLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS + TIME_TO_WAIT_DOOR_EACH_OTHER; // Start open left door proccess
       }
       if (canCloseRightDoor()) {
-        unlockRightDoorStartMillis = currentMillis; // Start unlock process for right door
-        closeRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open right door proccess
+        unlockRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for right door
+        closeRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open right door proccess
       }
+      currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
     } else if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN_LEFT_DOOR) {
+      stopDoorsStartMillis = currentMillis; // Start stop doors
+      resetVariables();
       if (canOpenLeftDoor()) {
-        unlockLeftDoorStartMillis = currentMillis; // Start unlock process for left door
-        openLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open left door proccess
+        unlockLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for left door
+        openLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open left door proccess
       }
+      currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
     }
   }
 }
