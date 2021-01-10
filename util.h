@@ -27,6 +27,7 @@
 #define REQUEST_COMMAND_TO_OPEN 0
 #define REQUEST_COMMAND_TO_CLOSE 1
 #define REQUEST_COMMAND_TO_OPEN_LEFT_DOOR 2
+#define REQUEST_COMMAND_TO_STOP 3
 
 char displayLineWithNumbers[22];
 char displayLine1[22];
@@ -74,7 +75,13 @@ char displayLine8[22];
 
 unsigned long currentMillis = 0;
 
-char* getRequestCommandName(int currentRequestCommand) {
+
+// Variables to handle changes in Request commands
+int8_t currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
+int8_t previousRequestCommand = currentRequestCommand;
+int8_t opositeRequestCommand = REQUEST_COMMAND_TO_OPEN;
+
+char* getRequestCommandName() {
   static char buf[14];
   if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN) {
     strcpy(buf, "Open");
@@ -82,6 +89,8 @@ char* getRequestCommandName(int currentRequestCommand) {
     strcpy(buf, "Close");
   } else if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN_LEFT_DOOR) {
     strcpy(buf, "Open Left Door");
+  } else if (currentRequestCommand == REQUEST_COMMAND_TO_STOP) {
+    strcpy(buf, "Stop Doors");
   } else {
     strcpy(buf, "Unknown");
   }
@@ -286,6 +295,8 @@ void handleStopsSignals() {
   } else if (digitalRead(MOTOR_ACTUATOR_RELAY_PIN) == LOW && digitalRead(OPEN_LEFT_MOTOR_ACTUATOR_RELAY_PIN) == HIGH && stopOpenLeftDoorStartMillis != 0 && currentMillis >= stopOpenLeftDoorStartMillis + TIME_TO_MOTORS_CLOSE_UP_DOORS) {
     digitalWrite(OPEN_LEFT_MOTOR_ACTUATOR_RELAY_PIN, LOW);
     stopOpenLeftDoorStartMillis = 0;
+    currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
+    opositeRequestCommand = REQUEST_COMMAND_TO_CLOSE;
     DEBUG_PRINT_LN("L Door is Opened");
   }
 
@@ -296,6 +307,8 @@ void handleStopsSignals() {
   } else if (digitalRead(MOTOR_ACTUATOR_RELAY_PIN) == LOW && digitalRead(CLOSE_LEFT_MOTOR_ACTUATOR_RELAY_PIN) == HIGH && stopCloseLeftDoorStartMillis != 0 && currentMillis >= stopCloseLeftDoorStartMillis + TIME_TO_MOTORS_CLOSE_UP_DOORS) {
     digitalWrite(CLOSE_LEFT_MOTOR_ACTUATOR_RELAY_PIN, LOW);
     stopCloseLeftDoorStartMillis = 0;
+    currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
+    opositeRequestCommand = REQUEST_COMMAND_TO_OPEN;
     if (digitalRead(LEFT_DOOR_CLOSE_PIN) == HIGH && digitalRead(RIGHT_DOOR_CLOSE_PIN) == HIGH) {
       lockLeftDoorStartMillis = currentMillis + TIME_TO_STOP_MOTORS; // Start lock proccess
       lockRightDoorStartMillis = currentMillis + TIME_TO_STOP_MOTORS; // Start lock proccess
@@ -310,6 +323,8 @@ void handleStopsSignals() {
   } else if (digitalRead(MOTOR_ACTUATOR_RELAY_PIN) == LOW && digitalRead(OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN) == HIGH && stopOpenRightDoorStartMillis != 0 && currentMillis >= stopOpenRightDoorStartMillis + TIME_TO_MOTORS_CLOSE_UP_DOORS) {
     digitalWrite(OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, LOW);
     stopOpenRightDoorStartMillis = 0;
+    currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
+    opositeRequestCommand = REQUEST_COMMAND_TO_CLOSE;
     DEBUG_PRINT_LN("R Door is Opened");
   }
 
@@ -320,6 +335,8 @@ void handleStopsSignals() {
   } else if (digitalRead(MOTOR_ACTUATOR_RELAY_PIN) == LOW && digitalRead(CLOSE_RIGHT_MOTOR_ACTUATOR_RELAY_PIN) == HIGH && stopCloseRightDoorStartMillis != 0 && currentMillis >= stopCloseRightDoorStartMillis + TIME_TO_MOTORS_CLOSE_UP_DOORS) {
     digitalWrite(CLOSE_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, LOW);
     stopCloseRightDoorStartMillis = 0;
+    currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
+    opositeRequestCommand = REQUEST_COMMAND_TO_OPEN;
     if (digitalRead(LEFT_DOOR_CLOSE_PIN) == HIGH && digitalRead(RIGHT_DOOR_CLOSE_PIN) == HIGH) {
       lockLeftDoorStartMillis = currentMillis + TIME_TO_STOP_MOTORS; // Start lock proccess
       lockRightDoorStartMillis = currentMillis + TIME_TO_STOP_MOTORS; // Start lock proccess
@@ -348,6 +365,22 @@ void handleStopDoors() {
 }
 
 
+
+unsigned long interiorLightStartMillis = 0;
+unsigned long interiorLight1StartMillis = 0;
+void handleInteriorLight() {
+  if (interiorLightStartMillis != 0 && currentMillis >= interiorLightStartMillis) {
+    digitalWrite(INTERIOR_LIGHT_RELAY_PIN, HIGH);
+    interiorLightStartMillis = 0;
+    interiorLight1StartMillis = currentMillis;
+    DEBUG_PRINT_LN("Interior Lamp: ON");
+  } else if (interiorLight1StartMillis != 0 && currentMillis >= interiorLight1StartMillis + TIME_TO_WAIT_INTERIOR_LAMP) {
+    digitalWrite(INTERIOR_LIGHT_RELAY_PIN, LOW);
+    interiorLight1StartMillis = 0;
+    DEBUG_PRINT_LN("Interior Lamp: OFF");
+  }
+}
+
 void resetVariables() {
   unlockLeftDoorStartMillis = 0;
   unlockLeftDoor1StartMillis = 0;
@@ -375,4 +408,11 @@ void resetVariables() {
   stopCloseLeftDoorStartMillis = 0;
   stopOpenRightDoorStartMillis = 0;
   stopCloseRightDoorStartMillis = 0;
+
+  stopDoorsStartMillis = 0;
+  stopDoors1StartMillis = 0;
+
+  interiorLightStartMillis = 0;
+  interiorLight1StartMillis = 0;
+  
 }

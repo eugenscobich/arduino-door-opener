@@ -38,18 +38,17 @@ void setup() {
 
 }
 
-// Variables to handle changes in Request commands
-int currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
-int previousRequestCommand = currentRequestCommand;
 
 void loop() {
   currentMillis = millis();
 
   handleStopsSignals();
-  
+  handleButtonSignals();  
   checkRequestCommand();
   handleRequestCommandChanges();
 
+
+  handleInteriorLight();
   handleStopDoors();
   handleLookUnlockCommands();
   handleDoorCommands();
@@ -65,13 +64,14 @@ void loop() {
 void handleRequestCommandChanges() {
   if (previousRequestCommand != currentRequestCommand) {
 
-    char msg[21] = "New command: ";
-    strcat(msg, getRequestCommandName(currentRequestCommand));
+    char msg[21] = "Command: ";
+    strcat(msg, getRequestCommandName());
     DEBUG_PRINT_LN(msg);
 
     if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN) {
-      stopDoorsStartMillis = currentMillis; // Start stop doors
       resetVariables();
+      stopDoorsStartMillis = currentMillis; // Start stop doors
+      interiorLightStartMillis = currentMillis; // Switch on the interior lamp
       if (canOpenLeftDoor()) {
         unlockLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for left door
         openLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open left door proccess
@@ -80,10 +80,10 @@ void handleRequestCommandChanges() {
         unlockRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for right door
         openRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS + TIME_TO_WAIT_DOOR_EACH_OTHER; // Start open right door proccess
       }
-      currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
     } else if (currentRequestCommand == REQUEST_COMMAND_TO_CLOSE) {
-      stopDoorsStartMillis = currentMillis; // Start stop doors
       resetVariables();
+      stopDoorsStartMillis = currentMillis; // Start stop doors
+      interiorLightStartMillis = currentMillis; // Switch on the interior lamp
       if (canCloseLeftDoor()) {
         unlockLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for left door
         closeLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS + TIME_TO_WAIT_DOOR_EACH_OTHER; // Start open left door proccess
@@ -92,15 +92,17 @@ void handleRequestCommandChanges() {
         unlockRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for right door
         closeRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open right door proccess
       }
-      currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
     } else if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN_LEFT_DOOR) {
-      stopDoorsStartMillis = currentMillis; // Start stop doors
       resetVariables();
+      stopDoorsStartMillis = currentMillis; // Start stop doors
+      interiorLightStartMillis = currentMillis; // Switch on the interior lamp
       if (canOpenLeftDoor()) {
         unlockLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for left door
         openLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open left door proccess
       }
-      currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
+    } else if (currentRequestCommand == REQUEST_COMMAND_TO_STOP) {
+      resetVariables();
+      stopDoorsStartMillis = currentMillis; // Start stop doors
     }
   }
 }
@@ -139,6 +141,7 @@ void setupPins() {
   pinMode(RIGHT_DOOR_OPEN_PIN, INPUT);
   pinMode(RIGHT_DOOR_CLOSE_PIN, INPUT);
 
+  pinMode(OPEN_CLOSE_BUTTON_PIN, INPUT);
 }
 
 void checkRequestCommand() {
@@ -152,21 +155,56 @@ void checkRequestCommand() {
     
     if (receivedValue == KEY_1_CODE || receivedValue == KEY_2_CODE || receivedValue == KEY_3_CODE) {
       //DEBUG_PRINT_LN("Received Close Command");
-      currentRequestCommand = REQUEST_COMMAND_TO_CLOSE;
+      if (currentRequestCommand == REQUEST_COMMAND_TO_CLOSE) {
+        currentRequestCommand = REQUEST_COMMAND_TO_STOP;
+      } else {
+        currentRequestCommand = REQUEST_COMMAND_TO_CLOSE;
+        opositeRequestCommand = REQUEST_COMMAND_TO_OPEN;
+      }
     }
 
     if (receivedValue == KEY_1_CODE + 1 || receivedValue == KEY_2_CODE + 1 || receivedValue == KEY_3_CODE + 1) {
       //DEBUG_PRINT_LN("Received Open Command");
-      currentRequestCommand = REQUEST_COMMAND_TO_OPEN;
+      if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN) {
+        currentRequestCommand = REQUEST_COMMAND_TO_STOP;
+      } else {
+        currentRequestCommand = REQUEST_COMMAND_TO_OPEN;
+        opositeRequestCommand = REQUEST_COMMAND_TO_CLOSE;
+      }
     }
     if (receivedValue == KEY_1_CODE + 3 || receivedValue == KEY_2_CODE + 3 || receivedValue == KEY_3_CODE + 3) {
       //DEBUG_PRINT_LN("Received Open Left Door Command");
-      currentRequestCommand = REQUEST_COMMAND_TO_OPEN_LEFT_DOOR;
+      if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN_LEFT_DOOR) {
+        currentRequestCommand = REQUEST_COMMAND_TO_STOP;
+      } else {
+        currentRequestCommand = REQUEST_COMMAND_TO_OPEN_LEFT_DOOR;
+        opositeRequestCommand = REQUEST_COMMAND_TO_CLOSE;
+      }
     }
 
     mySwitch.resetAvailable();
   }
 
+}
+
+uint8_t previousButtonState = HIGH;
+
+void handleButtonSignals() {
+  boolean currentButtonState = digitalRead(OPEN_CLOSE_BUTTON_PIN);
+  if (currentButtonState != previousButtonState && currentButtonState == LOW) {
+    if (currentRequestCommand == REQUEST_COMMAND_TO_STOP) {
+      currentRequestCommand = opositeRequestCommand;
+    } else if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN || currentRequestCommand == REQUEST_COMMAND_TO_OPEN_LEFT_DOOR) {
+      opositeRequestCommand = REQUEST_COMMAND_TO_CLOSE;
+      currentRequestCommand = REQUEST_COMMAND_TO_STOP;
+    } else if (currentRequestCommand == REQUEST_COMMAND_TO_CLOSE) {
+      opositeRequestCommand = REQUEST_COMMAND_TO_OPEN;
+      currentRequestCommand = REQUEST_COMMAND_TO_STOP;
+    } else if (currentRequestCommand == REQUEST_COMMAND_UNKNOWN) {
+      currentRequestCommand = opositeRequestCommand;
+    }
+  }
+  previousButtonState = currentButtonState;
 }
 
 void updateDisplay() {
