@@ -18,24 +18,25 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 unsigned long previousMillis = 0;
 
 void setup() {
+  delay(2000);
   Serial.begin(9600);
   /*
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
-*/
-  DEBUG_PRINT_LN("Hi!");
+  */
+  
+  
   mySwitch.enableReceive(RC_PIN);
   setupPins();
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
     DEBUG_PRINT_LN("SSD1306 allocation failed");
-    for (;;); // Don't proceed, loop forever
   }
 
   display.clearDisplay();
-
+  DEBUG_PRINT_LN("Hi!");
 }
 
 
