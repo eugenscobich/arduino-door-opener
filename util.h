@@ -371,7 +371,7 @@ void handleStopsSignals() {
   if (isLeftDoorOpened() && isLeftDoorOpening()) {
     digitalWrite(RELAY_12_36_PIN, LOW); // Switch to 12v
     digitalWrite(OPEN_LEFT_MOTOR_ACTUATOR_RELAY_PIN, LOW);
-    if (digitalRead(LEFT_DOOR_OPEN_PIN) == LOW && digitalRead(RIGHT_DOOR_OPEN_PIN) == LOW) {
+    if (isLeftDoorOpened() && (isRightDoorOpened() || currentRequestCommand == REQUEST_COMMAND_TO_OPEN_LEFT_DOOR)) {
       currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
       opositeRequestCommand = REQUEST_COMMAND_TO_CLOSE;
       digitalWrite(SIGNAL_LAMP_PIN, LOW);
