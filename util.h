@@ -5,6 +5,8 @@
 #define INTERIOR_LIGHT_RELAY_PIN PA7
 #define OPEN_CLOSE_BUTTON_PIN PB3
 
+#define LEFT_MOTOR_COUNTER_PIN PB8
+#define RIGHT_MOTOR_COUNTER_PIN PB9
 
 #define LEFT_DOOR_OPEN_PIN PB11     // Normal Open
 #define LEFT_DOOR_CLOSE_PIN PB10    // Normal Conected
@@ -23,8 +25,7 @@
 #define OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN PA1
 #define CLOSE_RIGHT_MOTOR_ACTUATOR_RELAY_PIN PA2
 
-
-#define BUZZER_PIN PC14
+#define BUZZER_PIN PC13
 
 // Request Command
 #define REQUEST_COMMAND_UNKNOWN -1
@@ -33,43 +34,50 @@
 #define REQUEST_COMMAND_TO_OPEN_LEFT_DOOR 2
 #define REQUEST_COMMAND_TO_STOP 3
 
-char displayLineWithNumbers[22];
-char displayLine1[22];
-char displayLine2[22];
-char displayLine3[22];
-char displayLine4[22];
-char displayLine5[22];
-char displayLine6[22];
-char displayLine7[22];
-char displayLine8[22];
+char emptyLine[22] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '\0'};
+char displayLineWithNumbers[22] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '\0'};
+char displayLine1[22] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '\0'};
+char displayLine2[22] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '\0'};
+char displayLine3[22] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '\0'};
+char displayLine4[22] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '\0'};
+char displayLine5[22] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '\0'};
+char displayLine6[22] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '\0'};
+char displayLine7[22] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '\0'};
+char displayLine8[22] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '\0'};
 
-#define DEBUG_PRINT_LN(str)                    \
-   Serial.print(millis());                     \
-   Serial.print(": ");                         \
-   Serial.println(str);                        \
-   strncpy(displayLine1, displayLine2, 21);    \
-   strncpy(displayLine2, displayLine3, 21);    \
-   strncpy(displayLine3, displayLine4, 21);    \
-   strncpy(displayLine4, displayLine5, 21);    \
-   strncpy(displayLine5, displayLine6, 21);    \
-   strncpy(displayLine6, displayLine7, 21);    \
-   strncpy(displayLine7, displayLine8, 21);    \
-   strncpy(displayLine8, str, 21);
+#define DEBUG_PRINT_LN(str)                               \
+   Serial.print(millis());                                \
+   Serial.print(": ");                                    \
+   Serial.println(str);                                   \
+   strncpy(displayLine1, displayLine2, 21);               \
+   strncpy(displayLine2, displayLine3, 21);               \
+   strncpy(displayLine3, displayLine4, 21);               \
+   strncpy(displayLine4, displayLine5, 21);               \
+   strncpy(displayLine5, displayLine6, 21);               \
+   strncpy(displayLine6, displayLine7, 21);               \
+   strncpy(displayLine7, displayLine8, 21);               \
+   strncpy(displayLine8, str, 21);                        \
+   if (strlen(str) < 18) {                                \
+     strncat(displayLine8, emptyLine, 21 - strlen(str));  \
+   }
 
 
-#define DEBUG_PRINT_NUMBER_LN(number)                 \
-   Serial.print(millis());                            \
-   Serial.print(": ");                                \
-   Serial.println(number);                            \
-   strncpy(displayLine1, displayLine2, 21);           \
-   strncpy(displayLine2, displayLine3, 21);           \
-   strncpy(displayLine3, displayLine4, 21);           \
-   strncpy(displayLine4, displayLine5, 21);           \
-   strncpy(displayLine5, displayLine6, 21);           \
-   strncpy(displayLine6, displayLine7, 21);           \
-   strncpy(displayLine7, displayLine8, 21);           \
-   sprintf(displayLineWithNumbers, "%d", number);     \
-   strncpy(displayLine8, displayLineWithNumbers, 21);   
+#define DEBUG_PRINT_NUMBER_LN(number)                                        \
+   Serial.print(millis());                                                   \
+   Serial.print(": ");                                                       \
+   Serial.println(number);                                                   \
+   strncpy(displayLine1, displayLine2, 21);                                  \
+   strncpy(displayLine2, displayLine3, 21);                                  \
+   strncpy(displayLine3, displayLine4, 21);                                  \
+   strncpy(displayLine4, displayLine5, 21);                                  \
+   strncpy(displayLine5, displayLine6, 21);                                  \
+   strncpy(displayLine6, displayLine7, 21);                                  \
+   strncpy(displayLine7, displayLine8, 21);                                  \
+   sprintf(displayLineWithNumbers, "%d", number);                            \
+   strncpy(displayLine8, displayLineWithNumbers, 21);                        \
+   if (strlen(displayLineWithNumbers) < 18) {                                \
+     strncat(displayLine8, emptyLine, 21 - strlen(displayLineWithNumbers));  \
+   }
 
 #define DEBUG_PRINT(str)       \
    Serial.print(millis());     \
@@ -217,6 +225,25 @@ void handleLookUnlockCommands() {
   }  
 }
 
+
+unsigned long leftMotorCounter = 0;
+unsigned long rightMotorCounter = 0;
+uint8_t previousLeftMotorCounterPinState = HIGH;
+uint8_t previousRightMotorCounterPinState = HIGH;
+void handleMotorCounters() {
+  uint8_t currentLeftMotorCounterPinState = digitalRead(LEFT_MOTOR_COUNTER_PIN);
+  if (currentLeftMotorCounterPinState != previousLeftMotorCounterPinState && previousLeftMotorCounterPinState == LOW) {
+    leftMotorCounter++;
+  }
+  previousLeftMotorCounterPinState = currentLeftMotorCounterPinState;
+
+  uint8_t currentRightMotorCounterPinState = digitalRead(RIGHT_MOTOR_COUNTER_PIN);
+  if (currentRightMotorCounterPinState != previousRightMotorCounterPinState && previousRightMotorCounterPinState == LOW) {
+    rightMotorCounter++;
+  }
+  previousRightMotorCounterPinState = currentRightMotorCounterPinState;
+}
+
 // Variables to react on Request Command and handle doors oppening
 
 unsigned long openLeftDoorStartMillis = 0;
@@ -239,6 +266,7 @@ void handleDoorCommands() {
     digitalWrite(OPEN_LEFT_MOTOR_ACTUATOR_RELAY_PIN, HIGH);
     openLeftDoorChangeSpeedStartMillis = currentMillis;
     openLeftDoorStartMillis = 0;
+    leftMotorCounter = 0;
   } else if (openLeftDoorChangeSpeedStartMillis != 0 && currentMillis >= openLeftDoorChangeSpeedStartMillis + TIME_TO_CHANGE_MOTORS_SPEED) {
     digitalWrite(RELAY_12_36_PIN, HIGH); // Switch to 36v
     openLeftDoorChangeSpeedStartMillis = 0;
@@ -252,6 +280,7 @@ void handleDoorCommands() {
     digitalWrite(CLOSE_LEFT_MOTOR_ACTUATOR_RELAY_PIN, HIGH);
     closeLeftDoorChangeSpeedStartMillis = currentMillis;
     closeLeftDoorStartMillis = 0;
+    leftMotorCounter = 0;
   } else if (closeLeftDoorChangeSpeedStartMillis != 0 && currentMillis >= closeLeftDoorChangeSpeedStartMillis + TIME_TO_CHANGE_MOTORS_SPEED) {
     digitalWrite(RELAY_12_36_PIN, HIGH); // Switch to 36v
     closeLeftDoorChangeSpeedStartMillis = 0;
@@ -265,6 +294,7 @@ void handleDoorCommands() {
     digitalWrite(OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, HIGH);
     openRightDoorChangeSpeedStartMillis = currentMillis;
     openRightDoorStartMillis = 0;
+    rightMotorCounter = 0;
   } else if (openRightDoorChangeSpeedStartMillis != 0 && currentMillis >= openRightDoorChangeSpeedStartMillis + TIME_TO_CHANGE_MOTORS_SPEED) {
     digitalWrite(RELAY_12_36_PIN, HIGH); // Switch to 36v
     openRightDoorChangeSpeedStartMillis = 0;
@@ -278,6 +308,7 @@ void handleDoorCommands() {
     digitalWrite(CLOSE_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, HIGH);
     closeRightDoorChangeSpeedStartMillis = currentMillis;
     closeRightDoorStartMillis = 0;
+    rightMotorCounter = 0;
   } else if (closeRightDoorChangeSpeedStartMillis != 0 && currentMillis >= closeRightDoorChangeSpeedStartMillis + TIME_TO_CHANGE_MOTORS_SPEED) {
     digitalWrite(RELAY_12_36_PIN, HIGH); // Switch to 36v
     closeRightDoorChangeSpeedStartMillis = 0;
@@ -418,6 +449,29 @@ void handleInteriorLight() {
     interiorLight1StartMillis = 0;
     DEBUG_PRINT_LN("Interior Lamp: OFF");
   }
+}
+
+
+void printMotorCounter() {
+  char leftCounterStr[4];
+  char rightCounterStr[4];
+  sprintf(leftCounterStr, "%03u", leftMotorCounter);
+  sprintf(rightCounterStr, "%03u", rightMotorCounter);
+
+  char finalDisplayLine1[22];
+  char finalDisplayLine2[22];
+
+  strncpy(finalDisplayLine1, displayLine1, 18);
+  strncpy(finalDisplayLine2, displayLine2, 18);
+
+  finalDisplayLine1[18] = '\0';
+  finalDisplayLine2[18] = '\0';
+
+  strcat(finalDisplayLine1, leftCounterStr);
+  strcat(finalDisplayLine2, rightCounterStr);
+
+  strncpy(displayLine1, finalDisplayLine1, 21);
+  strncpy(displayLine2, finalDisplayLine2, 21);
 }
 
 

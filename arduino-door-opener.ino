@@ -48,17 +48,17 @@ void loop() {
   checkRequestCommand();
   handleRequestCommandChanges();
 
-
+  handleMotorCounters();
   handleInteriorLight();
   handleSignalLamp();
   handleStopDoors();
   handleLookUnlockCommands();
   handleDoorCommands();
-  
+
+  printMotorCounter();
   updateDisplay();
 
   previousMillis = currentMillis;
-  
   previousRequestCommand = currentRequestCommand;
 }
 
@@ -147,6 +147,10 @@ void setupPins() {
   pinMode(RIGHT_DOOR_CLOSE_PIN, INPUT);
 
   pinMode(OPEN_CLOSE_BUTTON_PIN, INPUT);
+
+  pinMode(LEFT_MOTOR_COUNTER_PIN, INPUT);
+  pinMode(RIGHT_MOTOR_COUNTER_PIN, INPUT);
+
 }
 
 void checkRequestCommand() {
