@@ -1,12 +1,13 @@
 #include "config.h"
+#include <math.h> 
 
 // PINs
 #define RC_PIN PB12
 #define INTERIOR_LIGHT_RELAY_PIN PA7
 #define OPEN_CLOSE_BUTTON_PIN PB3
 
-#define LEFT_MOTOR_COUNTER_PIN PB8
-#define RIGHT_MOTOR_COUNTER_PIN PB9
+#define LEFT_MOTOR_COUNTER_PIN PB9
+#define RIGHT_MOTOR_COUNTER_PIN PB8
 
 #define LEFT_DOOR_OPEN_PIN PB11     // Normal Open
 #define LEFT_DOOR_CLOSE_PIN PB10    // Normal Conected
@@ -97,38 +98,45 @@ char* getRequestCommandName() {
   return buf;
 }
 
-bool canOpenLeftDoor() {
-    if (digitalRead(OPEN_LEFT_MOTOR_ACTUATOR_RELAY_PIN) == HIGH && digitalRead(MOTOR_ACTUATOR_RELAY_PIN) == LOW || digitalRead(LEFT_DOOR_OPEN_PIN) == LOW) {
-      DEBUG_PRINT_LN("Can't Open Left Door");
-      return false;
-    }
-    return true;
-}
+// ==================================================================================================================
 
-bool canOpenRightDoor() {
-    if (digitalRead(OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN) == HIGH && digitalRead(MOTOR_ACTUATOR_RELAY_PIN) == LOW || digitalRead(RIGHT_DOOR_OPEN_PIN) == LOW) {
-      DEBUG_PRINT_LN("Can't Open Right Door");
-      return false;
-    }
-    return true;
+bool isLeftDoorOpening() { return digitalRead(MOTOR_ACTUATOR_RELAY_PIN) == LOW && digitalRead(OPEN_LEFT_MOTOR_ACTUATOR_RELAY_PIN) == HIGH;    }
+bool isLeftDoorClosing() { return digitalRead(MOTOR_ACTUATOR_RELAY_PIN) == LOW && digitalRead(CLOSE_LEFT_MOTOR_ACTUATOR_RELAY_PIN) == HIGH;   }
+bool isRightDoorOpening() { return digitalRead(MOTOR_ACTUATOR_RELAY_PIN) == LOW && digitalRead(OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN) == HIGH;  }
+bool isRightDoorClosing() { return digitalRead(MOTOR_ACTUATOR_RELAY_PIN) == LOW && digitalRead(CLOSE_RIGHT_MOTOR_ACTUATOR_RELAY_PIN) == HIGH; }
+
+bool isLeftDoorOpened() { return digitalRead(LEFT_DOOR_OPEN_PIN) == LOW;   }
+bool isLeftDoorClosed() { return digitalRead(LEFT_DOOR_CLOSE_PIN) == LOW;  }
+bool isRightDoorOpened() { return digitalRead(RIGHT_DOOR_OPEN_PIN) == LOW; }
+bool isRightDoorClosed() { return digitalRead(RIGHT_DOOR_OPEN_PIN) == LOW; }
+
+// ==================================================================================================================
+
+bool canOpenLeftDoor() {
+  if (isLeftDoorOpening() && !isLeftDoorOpened()) { DEBUG_PRINT_LN("L Door is opening"); }
+  if (isLeftDoorOpened()) { DEBUG_PRINT_LN("L Door is opened"); }
+  return !isLeftDoorOpening() && !isLeftDoorOpened();
 }
 
 bool canCloseLeftDoor() {
-    if (digitalRead(CLOSE_LEFT_MOTOR_ACTUATOR_RELAY_PIN) == HIGH && digitalRead(MOTOR_ACTUATOR_RELAY_PIN) == LOW || digitalRead(LEFT_DOOR_CLOSE_PIN) == HIGH) {
-      DEBUG_PRINT_LN("Can't Close Left Door");
-      return false;
-    }
-    return true;
+  if (isLeftDoorClosing() && !isLeftDoorClosed()) { DEBUG_PRINT_LN("L Door is closing"); }
+  if (isLeftDoorClosed()) { DEBUG_PRINT_LN("L Door is closed"); }
+  return !isLeftDoorClosing() && !isLeftDoorClosed();
+}
+
+bool canOpenRightDoor() {
+  if (isRightDoorOpening() && !isRightDoorOpened()) { DEBUG_PRINT_LN("R Door is opening"); }
+  if (isRightDoorOpened()) { DEBUG_PRINT_LN("R Door is opened"); }
+  return !isRightDoorOpening() && !isRightDoorOpened();
 }
 
 bool canCloseRightDoor() {
-    if (digitalRead(CLOSE_RIGHT_MOTOR_ACTUATOR_RELAY_PIN) == HIGH && digitalRead(MOTOR_ACTUATOR_RELAY_PIN) == LOW || digitalRead(RIGHT_DOOR_CLOSE_PIN) == HIGH
-    ) {
-      DEBUG_PRINT_LN("Can't Close Right Door");
-      return false;
-    }
-    return true;
+  if (isRightDoorClosing() && !isRightDoorClosed()) { DEBUG_PRINT_LN("R Door is closing"); }
+  if (isRightDoorClosed()) { DEBUG_PRINT_LN("R Door is closed"); }
+  return !isRightDoorClosing() && !isRightDoorClosed();
 }
+
+// ==================================================================================================================
 
 // Variables to react on Request Command and handle lock/unlock doors
 unsigned long unlockLeftDoorStartMillis = 0;
@@ -149,6 +157,8 @@ void handleLookUnlockCommands() {
     DEBUG_PRINT_LN("Unlock L Door Start");
     digitalWrite(RELAY_12_36_PIN, LOW); // Ensure we are at 12v
     digitalWrite(MOTOR_ACTUATOR_RELAY_PIN, HIGH); // Switch to Actuators output
+    digitalWrite(CLOSE_LEFT_MOTOR_ACTUATOR_RELAY_PIN, LOW); // Both actuators should not be closing while we want to open
+    digitalWrite(CLOSE_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, LOW); // Both actuators should not be closing while we want to open
     unlockLeftDoorStartMillis = 0;
     unlockLeftDoor1StartMillis = currentMillis;
   } else if (unlockLeftDoor1StartMillis != 0 && currentMillis >= unlockLeftDoor1StartMillis + TIME_TO_RELAY_SWITCH) { // Need to wait until main relay will do the switch
@@ -166,6 +176,8 @@ void handleLookUnlockCommands() {
     DEBUG_PRINT_LN("Lock L Door: Start");
     digitalWrite(RELAY_12_36_PIN, LOW); // Ensure we are at 12v
     digitalWrite(MOTOR_ACTUATOR_RELAY_PIN, HIGH); // Switch to Actuators output
+    digitalWrite(OPEN_LEFT_MOTOR_ACTUATOR_RELAY_PIN, LOW); // Both actuators should not be opening while we want to close
+    digitalWrite(OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, LOW); // Both actuators should not be opening while we want to close
     lockLeftDoorStartMillis = 0;
     lockLeftDoor1StartMillis = currentMillis;
   } else if (lockLeftDoor1StartMillis != 0 && currentMillis >= lockLeftDoor1StartMillis + TIME_TO_RELAY_SWITCH) { // Need to wait until main relay will do the switch
@@ -183,6 +195,8 @@ void handleLookUnlockCommands() {
     DEBUG_PRINT_LN("Unlock R Door: Start");
     digitalWrite(RELAY_12_36_PIN, LOW); // Ensure we are at 12v
     digitalWrite(MOTOR_ACTUATOR_RELAY_PIN, HIGH); // Switch to Actuators output
+    digitalWrite(CLOSE_LEFT_MOTOR_ACTUATOR_RELAY_PIN, LOW); // Both actuators should not be closing while we want to open
+    digitalWrite(CLOSE_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, LOW); // Both actuators should not be closing while we want to open
     unlockRightDoorStartMillis = 0;
     unlockRightDoor1StartMillis = currentMillis;
   } else if (unlockRightDoor1StartMillis != 0 && currentMillis >= unlockRightDoor1StartMillis + TIME_TO_RELAY_SWITCH) { // Need to wait until main relay will do the switch
@@ -200,6 +214,8 @@ void handleLookUnlockCommands() {
     DEBUG_PRINT_LN("Lock R Door: Start");
     digitalWrite(RELAY_12_36_PIN, LOW); // Ensure we are at 12v
     digitalWrite(MOTOR_ACTUATOR_RELAY_PIN, HIGH); // Switch to Actuators output
+    digitalWrite(OPEN_LEFT_MOTOR_ACTUATOR_RELAY_PIN, LOW); // Both actuators should not be opening while we want to close
+    digitalWrite(OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, LOW); // Both actuators should not be opening while we want to close
     lockRightDoorStartMillis = 0;
     lockRightDoor1StartMillis = currentMillis;
   } else if (lockRightDoor1StartMillis != 0 && currentMillis >= lockRightDoor1StartMillis + TIME_TO_RELAY_SWITCH) {
@@ -213,36 +229,53 @@ void handleLookUnlockCommands() {
   }  
 }
 
+// ==================================================================================================================
 
-unsigned long leftMotorCounter = 0;
-unsigned long rightMotorCounter = 0;
+long leftMotorCounter = 0;
+long rightMotorCounter = 0;
 uint8_t previousLeftMotorCounterPinState = HIGH;
 uint8_t previousRightMotorCounterPinState = HIGH;
 void handleMotorCounters() {
   uint8_t currentLeftMotorCounterPinState = digitalRead(LEFT_MOTOR_COUNTER_PIN);
   if (currentLeftMotorCounterPinState != previousLeftMotorCounterPinState && previousLeftMotorCounterPinState == LOW) {
-    leftMotorCounter++;
+    if (isLeftDoorOpening()) {
+      leftMotorCounter++;
+    } else if (isLeftDoorClosing()) {
+      leftMotorCounter--;
+    }
   }
   previousLeftMotorCounterPinState = currentLeftMotorCounterPinState;
 
   uint8_t currentRightMotorCounterPinState = digitalRead(RIGHT_MOTOR_COUNTER_PIN);
   if (currentRightMotorCounterPinState != previousRightMotorCounterPinState && previousRightMotorCounterPinState == LOW) {
-    rightMotorCounter++;
+    if (isRightDoorOpening()) {
+      rightMotorCounter++;
+    } else if (isRightDoorClosing()) {
+      rightMotorCounter--;
+    }
   }
   previousRightMotorCounterPinState = currentRightMotorCounterPinState;
 }
 
-// Variables to react on Request Command and handle doors oppening
+// ==================================================================================================================
 
+// Variables to react on Request Command and handle doors oppening
 unsigned long openLeftDoorStartMillis = 0;
 unsigned long closeLeftDoorStartMillis = 0;
 unsigned long openRightDoorStartMillis = 0;
 unsigned long closeRightDoorStartMillis = 0;
+
+unsigned long numberOfRightMotorRevolutionAfterStartClosingLeftDoor = 0;
+unsigned long numberOfLeftMotorRevolutionAfterStartOpeningRightDoor = 0;
+
 void handleDoorCommands() {
   // Open Left Door
   if (openLeftDoorStartMillis != 0 && currentMillis >= openLeftDoorStartMillis) {
     DEBUG_PRINT_LN("L Door Opening: Start");
     digitalWrite(RELAY_12_36_PIN, LOW); // Ensure we are at 12v
+    digitalWrite(MOTOR_ACTUATOR_RELAY_PIN, LOW); // Relay shoyld be in position for motors
+    digitalWrite(CLOSE_LEFT_MOTOR_ACTUATOR_RELAY_PIN, LOW); // Both door should not be clossing while we want to open
+    digitalWrite(CLOSE_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, LOW); // Both door should not be clossing while we want to open
     digitalWrite(OPEN_LEFT_MOTOR_ACTUATOR_RELAY_PIN, HIGH);
     openLeftDoorStartMillis = 0;
   }
@@ -250,19 +283,26 @@ void handleDoorCommands() {
   // Close Left Door
   if (closeLeftDoorStartMillis != 0 && 
       currentMillis >= closeLeftDoorStartMillis && 
-      (rightMotorCounter > NUMBER_OF_RIGHT_MOTOR_REVOLUTIONS_AFTER_START_CLOSE_LEFT_DOOR || digitalRead(LEFT_DOOR_CLOSE_PIN) == HIGH)) {
+      (abs(rightMotorCounter) >= NUMBER_OF_RIGHT_MOTOR_REVOLUTIONS_AFTER_START_CLOSE_LEFT_DOOR || isRightDoorClosed())) {
         
     DEBUG_PRINT_LN("L Door Closing: Start");
     digitalWrite(RELAY_12_36_PIN, LOW); // Ensure we are at 12v
+    digitalWrite(MOTOR_ACTUATOR_RELAY_PIN, LOW); // Relay shoyld be in position for motors
+    digitalWrite(OPEN_LEFT_MOTOR_ACTUATOR_RELAY_PIN, LOW); // Both door should not be opening while we want to close
+    digitalWrite(OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, LOW); // Both door should not be opening while we want to close
     digitalWrite(CLOSE_LEFT_MOTOR_ACTUATOR_RELAY_PIN, HIGH);
     closeLeftDoorStartMillis = 0;
   }
 
   // Open Right Door
   if (openRightDoorStartMillis != 0 && currentMillis >= openRightDoorStartMillis && 
-      (leftMotorCounter > NUMBER_OF_LEFT_MOTOR_REVOLUTIONS_AFTER_START_OPEN_RIGHT_DOOR || digitalRead(LEFT_DOOR_OPEN_PIN) == LOW)) {
+      (abs(leftMotorCounter) >= NUMBER_OF_RIGHT_MOTOR_REVOLUTIONS_AFTER_START_CLOSE_LEFT_DOOR || isLeftDoorOpened())) {
+
     DEBUG_PRINT_LN("R Door Opening: Start");
     digitalWrite(RELAY_12_36_PIN, LOW); // Ensure we are at 12v
+    digitalWrite(MOTOR_ACTUATOR_RELAY_PIN, LOW); // Relay shoyld be in position for motors
+    digitalWrite(CLOSE_LEFT_MOTOR_ACTUATOR_RELAY_PIN, LOW); // Both door should not be clossing while we want to open
+    digitalWrite(CLOSE_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, LOW); // Both door should not be clossing while we want to open
     digitalWrite(OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, HIGH);
     openRightDoorStartMillis = 0;
   }
@@ -271,28 +311,40 @@ void handleDoorCommands() {
   if (closeRightDoorStartMillis != 0 && currentMillis >= closeRightDoorStartMillis) {
     DEBUG_PRINT_LN("R Door Closing: Start");
     digitalWrite(RELAY_12_36_PIN, LOW); // Ensure we are at 12v
+    digitalWrite(MOTOR_ACTUATOR_RELAY_PIN, LOW); // Relay shoyld be in position for motors
+    digitalWrite(OPEN_LEFT_MOTOR_ACTUATOR_RELAY_PIN, LOW); // Both door should not be opening while we want to close
+    digitalWrite(OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, LOW); // Both door should not be opening while we want to close
     digitalWrite(CLOSE_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, HIGH);
     closeRightDoorStartMillis = 0;
   } 
   
 }
 
+// ==================================================================================================================
+
+unsigned long leftMotorCounterPositionToSpeedUp = 0;
+unsigned long leftMotorCounterPositionToSpeedDown = 0;
+unsigned long rightMotorCounterPositionToSpeedUp = 0;
+unsigned long rightMotorCounterPositionToSpeedDown = 0;
 void handleChangeMotorSpeed() {
   if (digitalRead(RELAY_12_36_PIN) == LOW &&
-      leftMotorCounter > NUMBER_OF_MOTOR_REVOLUTIONS_BEFORE_TO_SPEED_UP && 
-      (rightMotorCounter > NUMBER_OF_MOTOR_REVOLUTIONS_BEFORE_TO_SPEED_UP || currentRequestCommand == REQUEST_COMMAND_TO_OPEN_LEFT_DOOR)&& 
-      leftMotorCounter < NUMBER_OF_MOTOR_REVOLUTIONS_AFTER_TO_SPEED_DOWN && 
-      (rightMotorCounter < NUMBER_OF_MOTOR_REVOLUTIONS_AFTER_TO_SPEED_DOWN || currentRequestCommand == REQUEST_COMMAND_TO_OPEN_LEFT_DOOR)) {
+      abs(leftMotorCounter) >= leftMotorCounterPositionToSpeedUp && 
+      abs(leftMotorCounter) < leftMotorCounterPositionToSpeedDown && 
+      abs(rightMotorCounter) >= rightMotorCounterPositionToSpeedUp &&
+      abs(rightMotorCounter) < rightMotorCounterPositionToSpeedDown) {
     digitalWrite(RELAY_12_36_PIN, HIGH); // Switch to 36v
-    DEBUG_PRINT_LN("Doors Speed up");
+    DEBUG_PRINT_LN("Doors speed up");
   } else if (digitalRead(RELAY_12_36_PIN) == HIGH && 
-            (leftMotorCounter > NUMBER_OF_MOTOR_REVOLUTIONS_AFTER_TO_SPEED_DOWN || rightMotorCounter > NUMBER_OF_MOTOR_REVOLUTIONS_AFTER_TO_SPEED_DOWN)) {
+            (abs(leftMotorCounter) >= leftMotorCounterPositionToSpeedDown || 
+            abs(rightMotorCounter) >= rightMotorCounterPositionToSpeedDown ||
+            abs(leftMotorCounter) < leftMotorCounterPositionToSpeedUp || 
+            abs(rightMotorCounter) < rightMotorCounterPositionToSpeedUp)) {
     digitalWrite(RELAY_12_36_PIN, LOW); // Switch to 12v
-    DEBUG_PRINT_LN("Doors Speed down");
+    DEBUG_PRINT_LN("Doors speed down");
   }
 }
 
-
+// ==================================================================================================================
 
 // Variables to handle signal lamp
 unsigned long signalLampStartMillis = 0;
@@ -313,10 +365,12 @@ void handleSignalLamp() {
   }
 }
 
+// ==================================================================================================================
+
 void handleStopsSignals() {
-  if (digitalRead(MOTOR_ACTUATOR_RELAY_PIN) == LOW && digitalRead(OPEN_LEFT_MOTOR_ACTUATOR_RELAY_PIN) == HIGH && digitalRead(LEFT_DOOR_OPEN_PIN) == LOW) { // Normal Open
-    digitalWrite(OPEN_LEFT_MOTOR_ACTUATOR_RELAY_PIN, LOW);
+  if (isLeftDoorOpened() && isLeftDoorOpening()) {
     digitalWrite(RELAY_12_36_PIN, LOW); // Switch to 12v
+    digitalWrite(OPEN_LEFT_MOTOR_ACTUATOR_RELAY_PIN, LOW);
     if (digitalRead(LEFT_DOOR_OPEN_PIN) == LOW && digitalRead(RIGHT_DOOR_OPEN_PIN) == LOW) {
       currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
       opositeRequestCommand = REQUEST_COMMAND_TO_CLOSE;
@@ -328,10 +382,10 @@ void handleStopsSignals() {
     DEBUG_PRINT_LN("L Door is Opened");
   }
 
-  if (digitalRead(MOTOR_ACTUATOR_RELAY_PIN) == LOW && digitalRead(CLOSE_LEFT_MOTOR_ACTUATOR_RELAY_PIN) == HIGH && digitalRead(LEFT_DOOR_CLOSE_PIN) == HIGH) { // Normal Conected
-    digitalWrite(CLOSE_LEFT_MOTOR_ACTUATOR_RELAY_PIN, LOW);
+  if (isLeftDoorClosed() && isLeftDoorClosing()) {
     digitalWrite(RELAY_12_36_PIN, LOW); // Switch to 12v
-    if (digitalRead(LEFT_DOOR_CLOSE_PIN) == HIGH && digitalRead(RIGHT_DOOR_CLOSE_PIN) == HIGH) {
+    digitalWrite(CLOSE_LEFT_MOTOR_ACTUATOR_RELAY_PIN, LOW);
+    if (isLeftDoorClosed() && isRightDoorClosed()) {
       currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
       opositeRequestCommand = REQUEST_COMMAND_TO_OPEN;
       lockLeftDoorStartMillis = currentMillis + TIME_BETWEEN_ACTUATOR_AND_MOTORS_SWITCH; // Start lock proccess
@@ -345,9 +399,10 @@ void handleStopsSignals() {
     DEBUG_PRINT_LN("L Door is Closed");
   }
 
-  if (digitalRead(MOTOR_ACTUATOR_RELAY_PIN) == LOW && digitalRead(OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN) == HIGH && digitalRead(RIGHT_DOOR_OPEN_PIN) == LOW) { // Normal Open
+  if (isRightDoorOpened() && isRightDoorOpening()) {
+    digitalWrite(RELAY_12_36_PIN, LOW); // Switch to 12v
     digitalWrite(OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, LOW);
-    if (digitalRead(LEFT_DOOR_OPEN_PIN) == LOW && digitalRead(RIGHT_DOOR_OPEN_PIN) == LOW) {
+    if (isLeftDoorOpened() && isRightDoorOpened()) {
       currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
       opositeRequestCommand = REQUEST_COMMAND_TO_CLOSE;
       digitalWrite(SIGNAL_LAMP_PIN, LOW);
@@ -358,9 +413,10 @@ void handleStopsSignals() {
     DEBUG_PRINT_LN("R Door is Opened");
   }
 
-  if (digitalRead(MOTOR_ACTUATOR_RELAY_PIN) == LOW && digitalRead(CLOSE_RIGHT_MOTOR_ACTUATOR_RELAY_PIN) == HIGH && digitalRead(RIGHT_DOOR_CLOSE_PIN) == HIGH) { // Normal Conected
+  if (isRightDoorClosed() && isRightDoorClosing()) {
+    digitalWrite(RELAY_12_36_PIN, LOW); // Switch to 12v
     digitalWrite(CLOSE_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, LOW);
-    if (digitalRead(LEFT_DOOR_CLOSE_PIN) == HIGH && digitalRead(RIGHT_DOOR_CLOSE_PIN) == HIGH) {
+    if (isLeftDoorClosed() && isRightDoorClosed()) {
       currentRequestCommand = REQUEST_COMMAND_UNKNOWN;
       opositeRequestCommand = REQUEST_COMMAND_TO_OPEN;
       lockLeftDoorStartMillis = currentMillis + TIME_BETWEEN_ACTUATOR_AND_MOTORS_SWITCH; // Start lock proccess
@@ -375,6 +431,7 @@ void handleStopsSignals() {
   }
 }
 
+// ==================================================================================================================
 
 uint8_t previousButtonState = HIGH;
 unsigned long buzzerStartMillis = 0;
@@ -404,6 +461,8 @@ void handleButtonSignals() {
   previousButtonState = currentButtonState;
 }
 
+// ==================================================================================================================
+
 unsigned long stopDoorsStartMillis = 0;
 void handleStopDoors() {
   if (stopDoorsStartMillis != 0 && currentMillis >= stopDoorsStartMillis) {
@@ -422,7 +481,7 @@ void handleStopDoors() {
   } 
 }
 
-
+// ==================================================================================================================
 
 unsigned long interiorLightStartMillis = 0;
 unsigned long interiorLight1StartMillis = 0;
@@ -439,12 +498,13 @@ void handleInteriorLight() {
   }
 }
 
+// ==================================================================================================================
 
 void printMotorCounter() {
   char leftCounterStr[4];
   char rightCounterStr[4];
-  sprintf(leftCounterStr, "%03u", leftMotorCounter);
-  sprintf(rightCounterStr, "%03u", rightMotorCounter);
+  sprintf(leftCounterStr, "%03d", leftMotorCounter);
+  sprintf(rightCounterStr, "%03d", rightMotorCounter);
   for(int i = 0; i < 21; i++) {
     if (displayLine1[i] == '\0') {
       displayLine1[i] = ' ';
@@ -460,6 +520,7 @@ void printMotorCounter() {
   }
 }
 
+// ==================================================================================================================
 
 void resetVariables() {
   unlockLeftDoorStartMillis = 0;

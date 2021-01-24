@@ -77,34 +77,65 @@ void handleRequestCommandChanges() {
       stopDoorsStartMillis = currentMillis; // Start stop doors
       
       if (canOpenLeftDoor()) {
+        if (isLeftDoorClosed()) {
+          leftMotorCounter = 0;
+        } 
         unlockLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for left door
         openLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_BETWEEN_ACTUATOR_AND_MOTORS_SWITCH; // Start open left door proccess
+        leftMotorCounterPositionToSpeedUp = NUMBER_OF_MOTOR_REVOLUTIONS_BEFORE_TO_SPEED_UP;
+        leftMotorCounterPositionToSpeedDown = NUMBER_OF_MOTOR_REVOLUTIONS_AFTER_TO_SPEED_DOWN;
         requestedCommandStarted = true;
       }
       if (canOpenRightDoor()) {
+        if (isRightDoorClosed()) {
+          rightMotorCounter = 0;
+        }
         unlockRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for right door
         openRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_BETWEEN_ACTUATOR_AND_MOTORS_SWITCH; // Start open right door proccess
+        rightMotorCounterPositionToSpeedUp = NUMBER_OF_MOTOR_REVOLUTIONS_BEFORE_TO_SPEED_UP;
+        rightMotorCounterPositionToSpeedDown = NUMBER_OF_MOTOR_REVOLUTIONS_AFTER_TO_SPEED_DOWN;
         requestedCommandStarted = true;
       }
+      
     } else if (currentRequestCommand == REQUEST_COMMAND_TO_CLOSE) {
       resetVariables();
       stopDoorsStartMillis = currentMillis; // Start stop doors
+      
       if (canCloseLeftDoor()) {
+        if (isLeftDoorOpened()) {
+          leftMotorCounter = 0;
+        }
         unlockLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for left door
         closeLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_BETWEEN_ACTUATOR_AND_MOTORS_SWITCH; // Start open left door proccess
+        leftMotorCounterPositionToSpeedUp = NUMBER_OF_MOTOR_REVOLUTIONS_BEFORE_TO_SPEED_UP;
+        leftMotorCounterPositionToSpeedDown = NUMBER_OF_MOTOR_REVOLUTIONS_AFTER_TO_SPEED_DOWN;
         requestedCommandStarted = true;
       }
       if (canCloseRightDoor()) {
+        if (isRightDoorOpened()) {
+          rightMotorCounter = 0;
+        }
         unlockRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for right door
         closeRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_BETWEEN_ACTUATOR_AND_MOTORS_SWITCH; // Start open right door proccess
+        rightMotorCounterPositionToSpeedUp = NUMBER_OF_MOTOR_REVOLUTIONS_BEFORE_TO_SPEED_UP;
+        rightMotorCounterPositionToSpeedDown = NUMBER_OF_MOTOR_REVOLUTIONS_AFTER_TO_SPEED_DOWN;
         requestedCommandStarted = true;
       }
+      
     } else if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN_LEFT_DOOR) {
       resetVariables();
       stopDoorsStartMillis = currentMillis; // Start stop doors
       if (canOpenLeftDoor()) {
+        if (isLeftDoorClosed()) {
+          leftMotorCounter = 0;
+          rightMotorCounter = 0;          
+        } 
         unlockLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for left door
         openLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_BETWEEN_ACTUATOR_AND_MOTORS_SWITCH; // Start open left door proccess
+        leftMotorCounterPositionToSpeedUp = NUMBER_OF_MOTOR_REVOLUTIONS_BEFORE_TO_SPEED_UP;
+        leftMotorCounterPositionToSpeedDown = NUMBER_OF_MOTOR_REVOLUTIONS_AFTER_TO_SPEED_DOWN;
+        rightMotorCounterPositionToSpeedUp = 0;
+        rightMotorCounterPositionToSpeedDown = 1;
         requestedCommandStarted = true;
       }
     } else if (currentRequestCommand == REQUEST_COMMAND_TO_STOP) {
@@ -114,8 +145,6 @@ void handleRequestCommandChanges() {
     if (requestedCommandStarted) {
       interiorLightStartMillis = currentMillis; // Switch on the interior lamp
       signalLampStartMillis = currentMillis; // Start toggling signal lamp
-      leftMotorCounter = 0;
-      rightMotorCounter = 0;
     }
   }
 }
