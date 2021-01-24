@@ -71,52 +71,51 @@ void handleRequestCommandChanges() {
     strcat(msg, getRequestCommandName());
     DEBUG_PRINT_LN(msg);
 
+    bool requestedCommandStarted = false;
     if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN) {
       resetVariables();
       stopDoorsStartMillis = currentMillis; // Start stop doors
-      interiorLightStartMillis = currentMillis; // Switch on the interior lamp
-      signalLampStartMillis = currentMillis; // Start toggling signal lamp
+      
       if (canOpenLeftDoor()) {
         unlockLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for left door
-        openLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open left door proccess
+        openLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_BETWEEN_ACTUATOR_AND_MOTORS_SWITCH; // Start open left door proccess
+        requestedCommandStarted = true;
       }
       if (canOpenRightDoor()) {
         unlockRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for right door
-        if (USE_MOTOR_REVOLUTION_COUNTERS) {
-          openRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open right door proccess
-        } else {
-          openRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS + TIME_TO_WAIT_DOOR_EACH_OTHER; // Start open right door proccess
-        }
+        openRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_BETWEEN_ACTUATOR_AND_MOTORS_SWITCH; // Start open right door proccess
+        requestedCommandStarted = true;
       }
     } else if (currentRequestCommand == REQUEST_COMMAND_TO_CLOSE) {
       resetVariables();
       stopDoorsStartMillis = currentMillis; // Start stop doors
-      interiorLightStartMillis = currentMillis; // Switch on the interior lamp
-      signalLampStartMillis = currentMillis; // Start toggling signal lamp
       if (canCloseLeftDoor()) {
         unlockLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for left door
-        if (USE_MOTOR_REVOLUTION_COUNTERS) {
-          closeLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open left door proccess
-        } else {
-          closeLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS + TIME_TO_WAIT_DOOR_EACH_OTHER; // Start open left door proccess
-        } 
+        closeLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_BETWEEN_ACTUATOR_AND_MOTORS_SWITCH; // Start open left door proccess
+        requestedCommandStarted = true;
       }
       if (canCloseRightDoor()) {
         unlockRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for right door
-        closeRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open right door proccess
+        closeRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_BETWEEN_ACTUATOR_AND_MOTORS_SWITCH; // Start open right door proccess
+        requestedCommandStarted = true;
       }
     } else if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN_LEFT_DOOR) {
       resetVariables();
       stopDoorsStartMillis = currentMillis; // Start stop doors
-      interiorLightStartMillis = currentMillis; // Switch on the interior lamp
-      signalLampStartMillis = currentMillis; // Start toggling signal lamp
       if (canOpenLeftDoor()) {
         unlockLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for left door
-        openLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open left door proccess
+        openLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_BETWEEN_ACTUATOR_AND_MOTORS_SWITCH; // Start open left door proccess
+        requestedCommandStarted = true;
       }
     } else if (currentRequestCommand == REQUEST_COMMAND_TO_STOP) {
       resetVariables();
       stopDoorsStartMillis = currentMillis; // Start stop doors
+    }
+    if (requestedCommandStarted) {
+      interiorLightStartMillis = currentMillis; // Switch on the interior lamp
+      signalLampStartMillis = currentMillis; // Start toggling signal lamp
+      leftMotorCounter = 0;
+      rightMotorCounter = 0;
     }
   }
 }
@@ -162,68 +161,51 @@ void setupPins() {
 
 }
 
+unsigned long lastReceivedValueStartMillis = 0;
 void checkRequestCommand() {
 
   unsigned long receivedValue = 0;
 
   if (mySwitch.available()) {
     receivedValue = mySwitch.getReceivedValue();
-    DEBUG_PRINT_LN("Received Value: ");
-    DEBUG_PRINT_NUMBER_LN(receivedValue);
-    
-    if (receivedValue == KEY_1_CODE || receivedValue == KEY_2_CODE || receivedValue == KEY_3_CODE) {
-      //DEBUG_PRINT_LN("Received Close Command");
-      if (currentRequestCommand == REQUEST_COMMAND_TO_CLOSE) {
-        currentRequestCommand = REQUEST_COMMAND_TO_STOP;
-      } else {
-        currentRequestCommand = REQUEST_COMMAND_TO_CLOSE;
-        opositeRequestCommand = REQUEST_COMMAND_TO_OPEN;
+    DEBUG_PRINT_LN("RC value: ");
+    DEBUG_PRINT_NUMBER(receivedValue);
+    if (currentMillis > lastReceivedValueStartMillis + 2000) {
+      if (receivedValue == KEY_1_CODE || receivedValue == KEY_2_CODE || receivedValue == KEY_3_CODE) {
+        //DEBUG_PRINT_LN("Received Close Command");
+        if (currentRequestCommand == REQUEST_COMMAND_TO_CLOSE) {
+          currentRequestCommand = REQUEST_COMMAND_TO_STOP;
+        } else {
+          currentRequestCommand = REQUEST_COMMAND_TO_CLOSE;
+          opositeRequestCommand = REQUEST_COMMAND_TO_OPEN;
+        }
       }
-    }
-
-    if (receivedValue == KEY_1_CODE + 1 || receivedValue == KEY_2_CODE + 1 || receivedValue == KEY_3_CODE + 1) {
-      //DEBUG_PRINT_LN("Received Open Command");
-      if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN) {
-        currentRequestCommand = REQUEST_COMMAND_TO_STOP;
-      } else {
-        currentRequestCommand = REQUEST_COMMAND_TO_OPEN;
-        opositeRequestCommand = REQUEST_COMMAND_TO_CLOSE;
+  
+      if (receivedValue == KEY_1_CODE + 1 || receivedValue == KEY_2_CODE + 1 || receivedValue == KEY_3_CODE + 1) {
+        //DEBUG_PRINT_LN("Received Open Command");
+        if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN) {
+          currentRequestCommand = REQUEST_COMMAND_TO_STOP;
+        } else {
+          currentRequestCommand = REQUEST_COMMAND_TO_OPEN;
+          opositeRequestCommand = REQUEST_COMMAND_TO_CLOSE;
+        }
       }
-    }
-    if (receivedValue == KEY_1_CODE + 3 || receivedValue == KEY_2_CODE + 3 || receivedValue == KEY_3_CODE + 3) {
-      //DEBUG_PRINT_LN("Received Open Left Door Command");
-      if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN_LEFT_DOOR) {
-        currentRequestCommand = REQUEST_COMMAND_TO_STOP;
-      } else {
-        currentRequestCommand = REQUEST_COMMAND_TO_OPEN_LEFT_DOOR;
-        opositeRequestCommand = REQUEST_COMMAND_TO_CLOSE;
+      if (receivedValue == KEY_1_CODE + 3 || receivedValue == KEY_2_CODE + 3 || receivedValue == KEY_3_CODE + 3) {
+        //DEBUG_PRINT_LN("Received Open Left Door Command");
+        if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN_LEFT_DOOR) {
+          currentRequestCommand = REQUEST_COMMAND_TO_STOP;
+        } else {
+          currentRequestCommand = REQUEST_COMMAND_TO_OPEN_LEFT_DOOR;
+          opositeRequestCommand = REQUEST_COMMAND_TO_CLOSE;
+        }
       }
+      lastReceivedValueStartMillis = currentMillis;
     }
-
     mySwitch.resetAvailable();
   }
 
 }
 
-uint8_t previousButtonState = HIGH;
-
-void handleButtonSignals() {
-  boolean currentButtonState = digitalRead(OPEN_CLOSE_BUTTON_PIN);
-  if (currentButtonState != previousButtonState && currentButtonState == LOW) {
-    if (currentRequestCommand == REQUEST_COMMAND_TO_STOP) {
-      currentRequestCommand = opositeRequestCommand;
-    } else if (currentRequestCommand == REQUEST_COMMAND_TO_OPEN || currentRequestCommand == REQUEST_COMMAND_TO_OPEN_LEFT_DOOR) {
-      opositeRequestCommand = REQUEST_COMMAND_TO_CLOSE;
-      currentRequestCommand = REQUEST_COMMAND_TO_STOP;
-    } else if (currentRequestCommand == REQUEST_COMMAND_TO_CLOSE) {
-      opositeRequestCommand = REQUEST_COMMAND_TO_OPEN;
-      currentRequestCommand = REQUEST_COMMAND_TO_STOP;
-    } else if (currentRequestCommand == REQUEST_COMMAND_UNKNOWN) {
-      currentRequestCommand = opositeRequestCommand;
-    }
-  }
-  previousButtonState = currentButtonState;
-}
 
 void updateDisplay() {
   display.clearDisplay();
