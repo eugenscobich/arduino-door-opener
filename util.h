@@ -251,9 +251,11 @@ unsigned long openLeftDoorChangeSpeedStartMillis = 0;
 
 unsigned long closeLeftDoorStartMillis = 0;
 unsigned long closeLeftDoorChangeSpeedStartMillis = 0;
+unsigned long numberOfRightMotorRevolutionsAfterStartCloseLeftDoor = 0;
 
 unsigned long openRightDoorStartMillis = 0;
 unsigned long openRightDoorChangeSpeedStartMillis = 0;
+unsigned long numberOfLeftMotorRevolutionsAfterStartOpenRightDoor = 0;
 
 unsigned long closeRightDoorStartMillis = 0;
 unsigned long closeRightDoorChangeSpeedStartMillis = 0;
@@ -267,35 +269,35 @@ void handleDoorCommands() {
     openLeftDoorChangeSpeedStartMillis = currentMillis;
     openLeftDoorStartMillis = 0;
     leftMotorCounter = 0;
-  } else if (openLeftDoorChangeSpeedStartMillis != 0 && currentMillis >= openLeftDoorChangeSpeedStartMillis + TIME_TO_CHANGE_MOTORS_SPEED) {
+  } else if (!USE_MOTOR_REVOLUTION_COUNTERS && openLeftDoorChangeSpeedStartMillis != 0 && currentMillis >= openLeftDoorChangeSpeedStartMillis + TIME_TO_CHANGE_MOTORS_SPEED) {
     digitalWrite(RELAY_12_36_PIN, HIGH); // Switch to 36v
     openLeftDoorChangeSpeedStartMillis = 0;
     DEBUG_PRINT_LN("L Door Opening: In Process");
   }
 
   // Close Left Door
-  if (closeLeftDoorStartMillis != 0 && currentMillis >= closeLeftDoorStartMillis) {
+  if (closeLeftDoorStartMillis != 0 && currentMillis >= closeLeftDoorStartMillis && rightMotorCounter > numberOfRightMotorRevolutionsAfterStartCloseLeftDoor) {
     DEBUG_PRINT_LN("L Door Closing: Start");
     digitalWrite(RELAY_12_36_PIN, LOW); // Ensure we are at 12v
     digitalWrite(CLOSE_LEFT_MOTOR_ACTUATOR_RELAY_PIN, HIGH);
     closeLeftDoorChangeSpeedStartMillis = currentMillis;
     closeLeftDoorStartMillis = 0;
     leftMotorCounter = 0;
-  } else if (closeLeftDoorChangeSpeedStartMillis != 0 && currentMillis >= closeLeftDoorChangeSpeedStartMillis + TIME_TO_CHANGE_MOTORS_SPEED) {
+  } else if (!USE_MOTOR_REVOLUTION_COUNTERS && closeLeftDoorChangeSpeedStartMillis != 0 && currentMillis >= closeLeftDoorChangeSpeedStartMillis + TIME_TO_CHANGE_MOTORS_SPEED) {
     digitalWrite(RELAY_12_36_PIN, HIGH); // Switch to 36v
     closeLeftDoorChangeSpeedStartMillis = 0;
     DEBUG_PRINT_LN("L Door Closing: In Process");
   }
 
   // Open Right Door
-  if (openRightDoorStartMillis != 0 && currentMillis >= openRightDoorStartMillis) {
+  if (openRightDoorStartMillis != 0 && currentMillis >= openRightDoorStartMillis && leftMotorCounter > numberOfLeftMotorRevolutionsAfterStartOpenRightDoor) {
     DEBUG_PRINT_LN("R Door Opening: Start");
     digitalWrite(RELAY_12_36_PIN, LOW); // Ensure we are at 12v
     digitalWrite(OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN, HIGH);
     openRightDoorChangeSpeedStartMillis = currentMillis;
     openRightDoorStartMillis = 0;
     rightMotorCounter = 0;
-  } else if (openRightDoorChangeSpeedStartMillis != 0 && currentMillis >= openRightDoorChangeSpeedStartMillis + TIME_TO_CHANGE_MOTORS_SPEED) {
+  } else if (!USE_MOTOR_REVOLUTION_COUNTERS && openRightDoorChangeSpeedStartMillis != 0 && currentMillis >= openRightDoorChangeSpeedStartMillis + TIME_TO_CHANGE_MOTORS_SPEED) {
     digitalWrite(RELAY_12_36_PIN, HIGH); // Switch to 36v
     openRightDoorChangeSpeedStartMillis = 0;
     DEBUG_PRINT_LN("R Door Opening: In Process");
@@ -309,12 +311,32 @@ void handleDoorCommands() {
     closeRightDoorChangeSpeedStartMillis = currentMillis;
     closeRightDoorStartMillis = 0;
     rightMotorCounter = 0;
-  } else if (closeRightDoorChangeSpeedStartMillis != 0 && currentMillis >= closeRightDoorChangeSpeedStartMillis + TIME_TO_CHANGE_MOTORS_SPEED) {
+  } else if (!USE_MOTOR_REVOLUTION_COUNTERS && closeRightDoorChangeSpeedStartMillis != 0 && currentMillis >= closeRightDoorChangeSpeedStartMillis + TIME_TO_CHANGE_MOTORS_SPEED) {
     digitalWrite(RELAY_12_36_PIN, HIGH); // Switch to 36v
     closeRightDoorChangeSpeedStartMillis = 0;
     DEBUG_PRINT_LN("R Door Closing: In Process");
   }
 }
+
+void handleChangeMotorSpeed() {
+
+  if (USE_MOTOR_REVOLUTION_COUNTERS && 
+            leftMotorCounter > NUMBER_OF_MOTOR_REVOLUTIONS_BEFORE_TO_SPEED_UP && rightMotorCounter > NUMBER_OF_MOTOR_REVOLUTIONS_BEFORE_TO_SPEED_UP && 
+            leftMotorCounter < NUMBER_OF_MOTOR_REVOLUTIONS_AFTER_TO_SPEED_DOWN && rightMotorCounter < NUMBER_OF_MOTOR_REVOLUTIONS_AFTER_TO_SPEED_DOWN &&
+            digitalRead(RELAY_12_36_PIN) == LOW) {
+    digitalWrite(RELAY_12_36_PIN, HIGH); // Switch to 36v
+    closeRightDoorChangeSpeedStartMillis = 0;
+    DEBUG_PRINT_LN("Doors Speed up");
+  } else if (USE_MOTOR_REVOLUTION_COUNTERS && 
+            (leftMotorCounter > NUMBER_OF_MOTOR_REVOLUTIONS_AFTER_TO_SPEED_DOWN || rightMotorCounter > NUMBER_OF_MOTOR_REVOLUTIONS_AFTER_TO_SPEED_DOWN) &&
+            digitalRead(RELAY_12_36_PIN) == HIGH) {
+    digitalWrite(RELAY_12_36_PIN, LOW); // Switch to 12v
+    DEBUG_PRINT_LN("Doors Speed down");
+  }
+  
+}
+
+
 
 // Variables to handle signal lamp
 unsigned long signalLampStartMillis = 0;

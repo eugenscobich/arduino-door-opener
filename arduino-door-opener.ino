@@ -54,6 +54,7 @@ void loop() {
   handleStopDoors();
   handleLookUnlockCommands();
   handleDoorCommands();
+  handleChangeMotorSpeed();
 
   printMotorCounter();
   updateDisplay();
@@ -81,7 +82,11 @@ void handleRequestCommandChanges() {
       }
       if (canOpenRightDoor()) {
         unlockRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for right door
-        openRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS + TIME_TO_WAIT_DOOR_EACH_OTHER; // Start open right door proccess
+        if (USE_MOTOR_REVOLUTION_COUNTERS) {
+          openRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open right door proccess
+        } else {
+          openRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS + TIME_TO_WAIT_DOOR_EACH_OTHER; // Start open right door proccess
+        }
       }
     } else if (currentRequestCommand == REQUEST_COMMAND_TO_CLOSE) {
       resetVariables();
@@ -90,7 +95,11 @@ void handleRequestCommandChanges() {
       signalLampStartMillis = currentMillis; // Start toggling signal lamp
       if (canCloseLeftDoor()) {
         unlockLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for left door
-        closeLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS + TIME_TO_WAIT_DOOR_EACH_OTHER; // Start open left door proccess
+        if (USE_MOTOR_REVOLUTION_COUNTERS) {
+          closeLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS; // Start open left door proccess
+        } else {
+          closeLeftDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS + TIME_TO_COMPLETE_UNLOCKING_DOORS + TIME_TO_WAIT_DOOR_EACH_OTHER; // Start open left door proccess
+        } 
       }
       if (canCloseRightDoor()) {
         unlockRightDoorStartMillis = currentMillis + TIME_TO_COMPLETE_STOP_DOORS; // Start unlock process for right door
