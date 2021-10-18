@@ -10,9 +10,9 @@
 #define RIGHT_MOTOR_COUNTER_PIN PB8
 
 #define LEFT_DOOR_OPEN_PIN PB11     // Normal Open
-#define LEFT_DOOR_CLOSE_PIN PB10    // Normal Conected
+#define LEFT_DOOR_CLOSE_PIN PB10    // Normal Open
 #define RIGHT_DOOR_OPEN_PIN PA11    // Normal Open
-#define RIGHT_DOOR_CLOSE_PIN PA12   // Normal Conected
+#define RIGHT_DOOR_CLOSE_PIN PA12   // Normal Open
 
 
 #define RELAY_12_36_PIN PA6
@@ -26,7 +26,7 @@
 #define OPEN_RIGHT_MOTOR_ACTUATOR_RELAY_PIN PA1
 #define CLOSE_RIGHT_MOTOR_ACTUATOR_RELAY_PIN PA2
 
-#define BUZZER_PIN PC13 // Use PC14 for production
+#define BUZZER_PIN PC14 // Use PC14 for production
 
 // Request Command
 #define REQUEST_COMMAND_UNKNOWN -1
@@ -108,7 +108,7 @@ bool isRightDoorClosing() { return digitalRead(MOTOR_ACTUATOR_RELAY_PIN) == LOW 
 bool isLeftDoorOpened() { return digitalRead(LEFT_DOOR_OPEN_PIN) == LOW;   }
 bool isLeftDoorClosed() { return digitalRead(LEFT_DOOR_CLOSE_PIN) == LOW;  }
 bool isRightDoorOpened() { return digitalRead(RIGHT_DOOR_OPEN_PIN) == LOW; }
-bool isRightDoorClosed() { return digitalRead(RIGHT_DOOR_OPEN_PIN) == LOW; }
+bool isRightDoorClosed() { return digitalRead(RIGHT_DOOR_CLOSE_PIN) == LOW; }
 
 // ==================================================================================================================
 
